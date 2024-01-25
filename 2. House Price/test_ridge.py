@@ -4,7 +4,7 @@ from scipy import stats
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.metrics import mean_squared_error
 from sklearn.preprocessing import StandardScaler
-from sklearn.linear_model import LinearRegression 
+from sklearn.linear_model import Ridge 
 
 import warnings
 warnings.filterwarnings("ignore", message="'squared' is deprecated in version 1.4 and will be removed in 1.6.")
@@ -236,10 +236,10 @@ ss = StandardScaler()
 ss.fit(saleprice_input)
 train_scaled = ss.transform(saleprice_input)
 
-lr = LinearRegression()
-lr.fit(train_scaled, saleprice_target)
+ridge = Ridge()
+ridge.fit(train_scaled, saleprice_target)
 
-train_predictions = lr.predict(train_scaled)
+train_predictions = ridge.predict(train_scaled)
 
 
 # 음수나 0이 나오면 log를 취할 수 없으므로 1e-10으로 바꿈
@@ -255,20 +255,21 @@ print(train_rmse)
 
 
 # SUBMISSION
-test_df = pd.read_csv('./test.csv')
+# test_df = pd.read_csv('./test.csv')
+test_df = pd.read_csv('./train.csv')
 
 testdf_input, testdf_target = preprocess(test_df.copy(), True) # testdf_target은 없음
 
-# testdf_input = testdf_input.drop('SalePrice', axis=1)
-# testdf_target = test_df['SalePrice']
-
+testdf_input = testdf_input.drop('SalePrice', axis=1)
+testdf_target = test_df['SalePrice']
+ 
 testdf_scaled = ss.transform(testdf_input)
-testdf_predictions = lr.predict(testdf_scaled)
+testdf_predictions = ridge.predict(testdf_scaled)
 
-results = pd.DataFrame({'Id': test_df['Id'], 'SalePrice': testdf_predictions})
-results.to_csv('./submission.csv', index=False)
+# results = pd.DataFrame({'Id': test_df['Id'], 'SalePrice': testdf_predictions})
+# results.to_csv('./submission.csv', index=False)
 
-# testdf_log_predictions = np.log(testdf_predictions)
-# testdf_log_target = np.log(testdf_target)
-# testdf_rmse = mean_squared_error(testdf_log_target, testdf_log_predictions, squared=False)
-# print(testdf_rmse)
+testdf_log_predictions = np.log(testdf_predictions)
+testdf_log_target = np.log(testdf_target)
+testdf_rmse = mean_squared_error(testdf_log_target, testdf_log_predictions, squared=False)
+print(testdf_rmse)

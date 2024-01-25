@@ -189,3 +189,7 @@ print(np.mean(train_rmse))
 print("TEST")
 print("mean: ", end="")
 print(np.mean(test_rmse))
+
+# # show each coefficient for each feature
+# for i in range(len(lr.coef_)):
+#     print(f"{saleprice_input.columns[i]}: {lr.coef_[i]}")
