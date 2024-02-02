@@ -4,4 +4,4 @@
 | 24/01/31 | santender_xgb | 0.62102 |  |
 | 24/01/31 | santender_xgb_1000 | 0.65893 |  |
 | 24/01/31 | santender_lgb | 0.66038 | * |
-| 24/01/31 | santender_lgb_featshuf | 0.62345 |  |
+| 24/02/02 | santender_lgb_featshuf | 0.62345 |  |
