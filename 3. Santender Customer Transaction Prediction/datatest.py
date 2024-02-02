@@ -18,10 +18,10 @@ df_input = df.drop(['target'], axis=1)
 
 target_corr = df.corr()['target'].drop('target')
 
-pd.set_option('display.max_columns', None)
-pd.set_option('display.max_rows', None)
+# pd.set_option('display.max_columns', None)
+# pd.set_option('display.max_rows', None)
 
-# print(df.head())
+print(df.head())
 # print(df.describe())
 # print(df.isna().sum()[df.isna().sum() > 0].sort_values(ascending=False))
 
@@ -32,8 +32,8 @@ pd.set_option('display.max_rows', None)
 # plt.show() 
 
 # show each column's correlation with target in barplot
-plt.figure(figsize=(20, 20))
-sns.barplot(x=target_corr.index, y=target_corr.values)
-plt.xticks(rotation=90)
-plt.show()
- 
+# plt.figure(figsize=(20, 20))
+# sns.barplot(x=target_corr.index, y=target_corr.values)
+# plt.xticks(rotation=90)
+# plt.show()
+  
