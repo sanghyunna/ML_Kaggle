@@ -15,33 +15,41 @@ def shuffle_feature(input_data, feature_index):
     np.random.shuffle(shuffled_data[:, feature_index])
     return shuffled_data
 
-def print_feature_importance(model, input_data, target):
+def print_feature_importance(model, input_data, target, feature_names):
     original_accuracy = accuracy_score(target, model.predict(input_data))
     print("Original Accuracy:", original_accuracy)
 
     feature_contributions = {}
     for feature_index in range(input_data.shape[1]):
-        print(f"[{feature_index}] ",end="")
+        feature_name = feature_names[feature_index]
+        print(f"[{feature_name}] ",end="")
         shuffled_input = shuffle_feature(input_data, feature_index)
         shuffled_accuracy = accuracy_score(target, model.predict(shuffled_input))
         contribution = original_accuracy - shuffled_accuracy
-        feature_contributions[feature_index] = contribution
+        feature_contributions[feature_name] = contribution
 
     sorted_contributions = sorted(feature_contributions.items(), key=lambda x: x[1], reverse=True)
 
     print("Feature Importance based on Contribution to Accuracy:")
-    for feature_index, contribution in sorted_contributions:
-        print(f"Feature {feature_index}: {contribution}")
+    for feature_name, contribution in sorted_contributions:
+        print(f"Feature {feature_name}: {contribution}")
+
+def load_model(params):
+    if os.path.exists(lgb_model_path):
+        return joblib.load(lgb_model_path)
+    else:
+        lgb = LGBMClassifier(**params)
+        lgb.fit(input_scaled, df_target)
+        joblib.dump(lgb, lgb_model_path)
+        return lgb
 
 df = pd.read_csv('train.csv')
 df.drop(['ID_code'], axis=1, inplace=True)
-df.drop(['var_17'], axis=1, inplace=True)
-df.drop(['var_14'], axis=1, inplace=True)
-df.drop(['var_61'], axis=1, inplace=True)
-df.drop(['var_38'], axis=1, inplace=True)
-df.drop(['var_161'], axis=1, inplace=True)
-df.drop(['var_185'], axis=1, inplace=True)
-df.drop(['var_117'], axis=1, inplace=True)
+
+features_to_drop = [129,29,182,14,84,98,41,61,79,100,183,158,46,47,126,42,160,7,38,73,185,30,10,27,103,124,136,17,117,39,161,96]
+for feature in features_to_drop:
+    feature_name = f'var_{str(feature)}'
+    df.drop([feature_name], axis=1, inplace=True)
 
 df_target = df['target']
 df_input = df.drop(['target'], axis=1)
@@ -69,14 +77,10 @@ params = {
 
 lgb_model_path = 'model.pkl'
 
-if os.path.exists(lgb_model_path):
-    lgb = joblib.load(lgb_model_path)
-else:
-    lgb = LGBMClassifier(**params)
-    lgb.fit(input_scaled, df_target)
-    joblib.dump(lgb, lgb_model_path)
 
-# print_feature_importance(lgb, input_scaled, df_target)
+lgb = load_model(params)
+
+# print_feature_importance(lgb, input_scaled, df_target, df_input.columns)
 
 scores = cross_validate(lgb, input_scaled, df_target, cv=skf, return_train_score=True, n_jobs=-1)
 
@@ -86,9 +90,12 @@ scores = cross_validate(lgb, input_scaled, df_target, cv=skf, return_train_score
 print(f"Train accuracy: {np.mean(scores['train_score'])}")
 print(f"Test accuracy: {np.mean(scores['test_score'])}")
 
-# print(np.sort(lr.coef_))
+# print(np.sort(lr.coef_)) 
 
 # exit()
 
 test_csv = pd.read_csv('test.csv')
 create_submission_csv(lgb, test_csv, 'lgb_featshuf.csv', ms)
+
+plot_importance(lgb, figsize=(10, 6))
+plt.show()
