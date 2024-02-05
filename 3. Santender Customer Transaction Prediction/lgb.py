@@ -3,6 +3,7 @@ from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from sklearn.model_selection import StratifiedKFold, cross_validate, train_test_split
 from lightgbm import LGBMClassifier, plot_importance
 import matplotlib.pyplot as plt
+from preprocess import preprocess
 from submit import create_submission_csv
 import pandas as pd
 import numpy as np
@@ -46,10 +47,7 @@ def load_model(params):
 df = pd.read_csv('train.csv')
 df.drop(['ID_code'], axis=1, inplace=True)
 
-features_to_drop = [129,29,182,14,84,98,41,61,79,100,183,158,46,47,126,42,160,7,38,73,185,30,10,27,103,124,136,17,117,39,161,96]
-for feature in features_to_drop:
-    feature_name = f'var_{str(feature)}'
-    df.drop([feature_name], axis=1, inplace=True)
+df = preprocess(df)
 
 df_target = df['target']
 df_input = df.drop(['target'], axis=1)
@@ -79,9 +77,10 @@ lgb_model_path = 'model.pkl'
 
 
 lgb = load_model(params)
-
+print("Model loaded..")
 # print_feature_importance(lgb, input_scaled, df_target, df_input.columns)
 
+print('Starting cross validation..')
 scores = cross_validate(lgb, input_scaled, df_target, cv=skf, return_train_score=True, n_jobs=-1)
 
 # end = time.time()
