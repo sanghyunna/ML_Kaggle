@@ -1,4 +1,4 @@
-from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 from sklearn.impute import SimpleImputer
 
@@ -139,8 +139,8 @@ def predict_and_save(ss, lgb, lgb_two=False):
     test_target = test_target.astype(bool)
 
     results = pd.DataFrame({'PassengerId': test_df['PassengerId'], 'Transported': test_target})
-    results.to_csv('lgbm_second.csv', index=False)
-    print("Saved as lgbm_second.csv")
+    results.to_csv('lr_second.csv', index=False)
+    print("Saved as lr_second.csv")
     
 space_titanic = preprocess(df.copy())
 
@@ -176,20 +176,20 @@ space_titanic = preprocess_for_second(space_titanic, predictions)
 titanic_target = space_titanic['Transported']
 titanic_input = space_titanic.drop(['Transported'], axis=1)
 
-lgb_two = LGBMClassifier(**params)
+lr = LogisticRegression(max_iter=1000, n_jobs=-1)
 
-lgb_two.fit(titanic_input, titanic_target)
+lr.fit(titanic_input, titanic_target)
 
-print("Train accuracy:", lgb_two.score(titanic_input, titanic_target))
+print("Train accuracy:", lr.score(titanic_input, titanic_target))
 
 
 # 테스트셋에 대해 예측하고 csv파일로 저장
-predict_and_save(ss, lgb, lgb_two)
+predict_and_save(ss, lgb, lr)
 
 # print the importance of features
 print("\n[ Feature importance ]")
 for i in range(len(titanic_input.columns)):
-    print(f"{titanic_input.columns[i]}: {lgb_two.feature_importances_[i]}")
+    print(f"{titanic_input.columns[i]}: {lr.coef_[0][i]}")
 
 print("\n[ True or False ratio ]")
 print(f"True: {np.sum(predictions) / len(predictions)}")
