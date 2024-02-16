@@ -136,8 +136,8 @@ def predict_and_save(lgb, lgb_two=False):
     test_target = test_target.astype(bool)
 
     results = pd.DataFrame({'PassengerId': test_df['PassengerId'], 'Transported': test_target})
-    results.to_csv('lgbm_second.csv', index=False)
-    print("Saved as lgbm_second.csv")
+    results.to_csv('lgbm_less_depth.csv', index=False)
+    print("Saved as lgbm_less_depth.csv")
     
 space_titanic = preprocess(df.copy())
 
@@ -146,7 +146,8 @@ titanic_input = space_titanic.drop(['Transported'], axis=1)
 
 params = {
     'n_estimators': 500,
-    'learning_rate': 0.05,
+    'learning_rate': 0.01,
+    'max_depth': 3,
     'num_leaves': 32,
     'sub_feature': 0.5,
     'n_jobs': -1,
