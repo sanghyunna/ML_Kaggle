@@ -85,7 +85,8 @@ def preprocess(df):
     # Age 결측치는 전체 중간값으로 채움
     df['Age'] = df['Age'].fillna(df['Age'].median())
     
-    
+    df['CryoSleep'] = df['CryoSleep'].astype(float)
+    df['VIP'] = df['VIP'].astype(float)
 
     # ========== 불필요 Feature 드랍 ==========
     df = df.drop(['PassengerId', 'Name', 'LastName', 'Cabin', 'HomePlanet', 'Destination', 'HomePlanet-Destination-String'], axis=1)
@@ -143,10 +144,6 @@ space_titanic = preprocess(df.copy())
 titanic_target = space_titanic['Transported']
 titanic_input = space_titanic.drop(['Transported'], axis=1)
 
-ss = StandardScaler()
-ss.fit(titanic_input)
-titanic_input_scaled = ss.transform(titanic_input)
-
 params = {
     'n_estimators': 500,
     'learning_rate': 0.05,
@@ -157,9 +154,11 @@ params = {
 }
 
 lgb = LGBMClassifier(**params)
-lgb.fit(titanic_input_scaled, titanic_target)
 
-predictions = lgb.predict(titanic_input_scaled)
+
+lgb.fit(titanic_input, titanic_target)
+
+predictions = lgb.predict(titanic_input)
 
 space_titanic = preprocess_for_second(space_titanic, predictions)
 
