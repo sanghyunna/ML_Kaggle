@@ -21,7 +21,7 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 train_val_dict = {}
 
 df = pd.read_csv('train.csv')
-
+filename = "less_depth_no_avgspending" + ".csv"
 
 def preprocess(df):
     # ========== Feature 추가 ==========
@@ -89,7 +89,8 @@ def preprocess(df):
     df['VIP'] = df['VIP'].astype(float)
 
     # ========== 불필요 Feature 드랍 ==========
-    df = df.drop(['PassengerId', 'Name', 'LastName', 'Cabin', 'HomePlanet', 'Destination', 'HomePlanet-Destination-String'], axis=1)
+    df = df.drop(['PassengerId', 'Name', 'LastName', 'Cabin', 'HomePlanet', 'Destination', 'HomePlanet-Destination-String', 'AvgSpending'], axis=1)
+    # df = df.drop(['PassengerId', 'Name', 'LastName', 'Cabin', 'HomePlanet', 'Destination', 'HomePlanet-Destination-String'], axis=1)
     return df
 
 def preprocess_for_second(df, predictions):
@@ -136,8 +137,8 @@ def predict_and_save(lgb, lgb_two=False):
     test_target = test_target.astype(bool)
 
     results = pd.DataFrame({'PassengerId': test_df['PassengerId'], 'Transported': test_target})
-    results.to_csv('lgbm_less_depth.csv', index=False)
-    print("Saved as lgbm_less_depth.csv")
+    results.to_csv(filename, index=False)
+    print("Saved as ", filename)
     
 space_titanic = preprocess(df.copy())
 
