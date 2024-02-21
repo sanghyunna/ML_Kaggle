@@ -151,15 +151,21 @@ titanic_input = space_titanic.drop(['Transported'], axis=1)
 
 first_model = xgb.XGBClassifier(
     n_jobs=-1,
-    max_depth=5,
-    n_estimators=1000,
-    eta=0.05,
     subsample=0.5,
     sampling_method='uniform',
     colsample_bytree=0.5,
 )
 
-first_model.fit(titanic_input, titanic_target)
+first_rs = RandomizedSearchCV(first_model, {
+    'max_depth': randint(3, 10),
+    'n_estimators': randint(100, 1000),
+    'learning_rate': uniform(0.01, 0.3),
+}, n_iter=500, cv=5)
+
+first_rs.fit(titanic_input, titanic_target)
+first_model = first_rs.best_estimator_
+print("Best params:", first_rs.best_params_)
+# first_model.fit(titanic_input, titanic_target)
 
 predictions = first_model.predict(titanic_input)
 
@@ -172,7 +178,7 @@ titanic_input = space_titanic.drop(['Transported'], axis=1)
 test_model = xgb.XGBClassifier(
     n_jobs=-1,
     max_depth=5,
-    n_estimators=1000,
+    n_estimators=500,
     eta=0.05,
     subsample=0.5,
     sampling_method='uniform',
