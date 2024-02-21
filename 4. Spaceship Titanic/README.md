@@ -7,3 +7,4 @@
 | 24/02/16 | lgbm_with_fe_without_both_scale | 0.73392 |  |
 | 24/02/16 | lgbm_with_fe_without_both_scale_less_depth | 0.79775 | |
 | 24/02/16 | less_depth_fe_no_avgspending | 0.79939 | * |
+| 24/02/16 | lgbm_sgd | 0.79331 |  |
