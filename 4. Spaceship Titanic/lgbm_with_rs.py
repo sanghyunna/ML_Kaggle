@@ -1,4 +1,4 @@
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import RandomizedSearchCV, train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.impute import SimpleImputer
 
@@ -6,6 +6,7 @@ import pandas as pd
 import numpy as np
 import warnings
 from lightgbm import LGBMClassifier
+from scipy.stats import uniform, randint
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 
@@ -21,7 +22,7 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 train_val_dict = {}
 
 df = pd.read_csv('train.csv')
-filename = "less_depth_no_avgspending" + ".csv"
+filename = "less_depth_rs" + ".csv"
 
 def preprocess(df):
     # ========== Feature 추가 ==========
@@ -91,6 +92,7 @@ def preprocess(df):
     # ========== 불필요 Feature 드랍 ==========
     df = df.drop(['PassengerId', 'Name', 'LastName', 'Cabin', 'HomePlanet', 'Destination', 'HomePlanet-Destination-String', 'AvgSpending'], axis=1)
     # df = df.drop(['PassengerId', 'Name', 'LastName', 'Cabin', 'HomePlanet', 'Destination', 'HomePlanet-Destination-String'], axis=1)
+    df = df.drop(['CryoSleep', 'VIP'], axis=1)
     return df
 
 def preprocess_for_second(df, predictions):
@@ -120,23 +122,20 @@ def preprocess_for_second(df, predictions):
 
 def predict(df, lgb, lgb_two=False):
     df = preprocess(df.copy())
-    df = df.astype(int)
-    
+    df = df.astype(float)
     predictions = lgb.predict(df)
 
-    if lgb_two:
-        df = preprocess_for_second(df, predictions)
-        predictions = lgb_two.predict(df)
+    if lgb_two == False:
+        return predictions.astype(bool)
+    
+    df = preprocess_for_second(df, predictions)
+    predictions = lgb_two.predict(df)
 
-    return predictions
+    return predictions.astype(bool)
 
-def predict_and_save(lgb, lgb_two=False):
-    test_df = pd.read_csv('test.csv')
-    test_target = predict(test_df, lgb, lgb_two)  
-
-    test_target = test_target.astype(bool)
-
-    results = pd.DataFrame({'PassengerId': test_df['PassengerId'], 'Transported': test_target})
+    
+def save(df, predictions):
+    results = pd.DataFrame({'PassengerId': df['PassengerId'], 'Transported': predictions})
     results.to_csv(filename, index=False)
     print("Saved as ", filename)
     
@@ -145,17 +144,16 @@ space_titanic = preprocess(df.copy())
 titanic_target = space_titanic['Transported']
 titanic_input = space_titanic.drop(['Transported'], axis=1)
 
-params = {
+lgb_params = {
     'n_estimators': 500,
     'learning_rate': 0.01,
     'max_depth': 3,
     'num_leaves': 32,
-    'sub_feature': 0.5,
     'n_jobs': -1,
     'verbose': -1,
 }
 
-lgb = LGBMClassifier(**params)
+lgb = LGBMClassifier(**lgb_params)
 
 
 lgb.fit(titanic_input, titanic_target)
@@ -167,15 +165,39 @@ space_titanic = preprocess_for_second(space_titanic, predictions)
 titanic_target = space_titanic['Transported']
 titanic_input = space_titanic.drop(['Transported'], axis=1)
 
-lgb_two = LGBMClassifier(**params)
+lgb_two_params = {
+    'n_estimators': randint(100, 500),
+    'learning_rate': uniform(0.01, 0.1),
+    'max_depth': randint(1, 3),
+    'num_leaves': randint(16, 64),
+    'min_data_in_leaf': randint(100, 1000),
+}
 
-lgb_two.fit(titanic_input, titanic_target)
+lgb_two = LGBMClassifier(
+    n_jobs=-1,
+    verbose=-1,
+    device='gpu',
+    gpu_platform_id=1,
+    gpu_device_id=0
+    )
+# lgb_two = LGBMClassifier(
+#     n_jobs=-1,
+#     verbose=-1,
+# )
+
+rs = RandomizedSearchCV(lgb_two, lgb_two_params, n_iter=1000, cv=5)
+
+rs.fit(titanic_input, titanic_target)
+
+lgb_two = rs.best_estimator_
 
 print("Train accuracy:", lgb_two.score(titanic_input, titanic_target))
 
 
 # 테스트셋에 대해 예측하고 csv파일로 저장
-predict_and_save(lgb, lgb_two)
+test_df = pd.read_csv('test.csv')
+test_target = predict(test_df, lgb, lgb_two)  
+save(test_df, test_target)
 
 # print the importance of features
 print("\n[ Feature importance ]")
