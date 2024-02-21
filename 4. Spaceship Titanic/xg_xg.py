@@ -9,6 +9,7 @@ import numpy as np
 import warnings
 from lightgbm import LGBMClassifier
 from scipy.stats import uniform, randint
+import xgboost as xgb
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 
@@ -137,8 +138,7 @@ def predict(df, first_model, test_model=False):
     predictions = test_model.predict(df)
 
     return predictions.astype(bool)
-
-    
+   
 def save(df, predictions):
     results = pd.DataFrame({'PassengerId': df['PassengerId'], 'Transported': predictions})
     results.to_csv(filename, index=False)
@@ -149,9 +149,14 @@ space_titanic = preprocess(df.copy())
 titanic_target = space_titanic['Transported']
 titanic_input = space_titanic.drop(['Transported'], axis=1)
 
-first_model = LogisticRegression(
+first_model = xgb.XGBClassifier(
     n_jobs=-1,
-    max_iter=1000,
+    max_depth=5,
+    n_estimators=1000,
+    eta=0.05,
+    subsample=0.5,
+    sampling_method='uniform',
+    colsample_bytree=0.5,
 )
 
 first_model.fit(titanic_input, titanic_target)
@@ -163,29 +168,31 @@ space_titanic = preprocess_for_second(space_titanic, predictions)
 titanic_target = space_titanic['Transported']
 titanic_input = space_titanic.drop(['Transported'], axis=1)
 
-test_model_params = {
-    'loss': ['hinge', 'log', 'modified_huber', 'squared_hinge', 'perceptron'],
-}
 
-test_model = SGDClassifier(
+test_model = xgb.XGBClassifier(
     n_jobs=-1,
-    max_iter=1000,
-    tol=1e-3,
-    alpha=0.0001,
-    learning_rate='optimal',
-    early_stopping=True,
-    validation_fraction=0.1,
-    n_iter_no_change=5,
-    class_weight='balanced',
+    max_depth=5,
+    n_estimators=1000,
+    eta=0.05,
+    subsample=0.5,
+    sampling_method='uniform',
+    colsample_bytree=0.5,
 )
 
-rs = RandomizedSearchCV(test_model, test_model_params, n_iter=1000, cv=5)
+# 랜덤서치 활용
+# test_model_params = {
+#     'max_depth': randint(3, 10),
+#     'n_estimators': randint(100, 1000),
+#     'learning_rate': uniform(0.01, 0.3),
+# }
+# rs = RandomizedSearchCV(test_model, test_model_params, n_iter=1000, cv=5)
+# rs.fit(titanic_input, titanic_target)
+# test_model = rs.best_estimator_
 
-rs.fit(titanic_input, titanic_target)
+# 바로 모델 사용
+test_model.fit(titanic_input, titanic_target)
 
-test_model = rs.best_estimator_
-
-print("Train accuracy:", test_model.score(titanic_input, titanic_target))
+print("Train accuracy:", round(float(test_model.score(titanic_input, titanic_target)),4))
 
 
 # 테스트셋에 대해 예측하고 csv파일로 저장
@@ -196,8 +203,8 @@ save(test_df, test_target)
 # print the importance of features
 print("\n[ Feature importance ]")
 for i in range(len(titanic_input.columns)):
-    print(f"{titanic_input.columns[i]}: {test_model.coef_[0][i]}")
+    print(f"{titanic_input.columns[i]} : {round(float(test_model.feature_importances_[i]),4)}")
 
 print("\n[ True or False ratio ]")
-print(f"True: {np.sum(predictions) / len(predictions)}")
-print(f"False: {1 - np.sum(predictions) / len(predictions)}")
+print(f"True: {round(float(np.sum(predictions) / len(predictions)),4)}")
+print(f"False: {round(float(1 - np.sum(predictions) / len(predictions)),4)}")

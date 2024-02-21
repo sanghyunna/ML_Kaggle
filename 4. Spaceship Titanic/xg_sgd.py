@@ -9,6 +9,7 @@ import numpy as np
 import warnings
 from lightgbm import LGBMClassifier
 from scipy.stats import uniform, randint
+import xgboost as xgb
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 
@@ -137,8 +138,7 @@ def predict(df, first_model, test_model=False):
     predictions = test_model.predict(df)
 
     return predictions.astype(bool)
-
-    
+   
 def save(df, predictions):
     results = pd.DataFrame({'PassengerId': df['PassengerId'], 'Transported': predictions})
     results.to_csv(filename, index=False)
@@ -149,9 +149,11 @@ space_titanic = preprocess(df.copy())
 titanic_target = space_titanic['Transported']
 titanic_input = space_titanic.drop(['Transported'], axis=1)
 
-first_model = LogisticRegression(
+first_model = xgb.XGBClassifier(
     n_jobs=-1,
-    max_iter=1000,
+    max_depth=3,
+    n_estimators=1000,
+    objective='binary:logistic',
 )
 
 first_model.fit(titanic_input, titanic_target)
@@ -164,7 +166,16 @@ titanic_target = space_titanic['Transported']
 titanic_input = space_titanic.drop(['Transported'], axis=1)
 
 test_model_params = {
-    'loss': ['hinge', 'log', 'modified_huber', 'squared_hinge', 'perceptron'],
+    'loss': ['hinge', 'modified_huber', 'squared_hinge', 'perceptron'],
+    'penalty': ['l2', 'l1', 'elasticnet'],
+    'alpha': uniform(0.0001, 0.001),
+    'learning_rate': ['optimal', 'adaptive'],
+    'eta0': uniform(0.01, 0.1),
+    'l1_ratio': uniform(0, 1),
+    'early_stopping': [True],
+    'validation_fraction': uniform(0.1, 0.2),
+    'n_iter_no_change': randint(5, 10),
+    'class_weight': ['balanced'],
 }
 
 test_model = SGDClassifier(
