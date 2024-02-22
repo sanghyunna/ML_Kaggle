@@ -33,10 +33,10 @@ param_grid = {
     'max_depth': [-1, 3, 5],
     'n_estimators': [i for i in range(100, 1000, 100)],
     'early_stopping_rounds': [100, 500, 1000],
-    'learning_rate': [0.01, 0.02, 0.05, 0.1],
+    'learning_rate': [0.01, 0.1],
     'colsample_bytree': [0.3, 0.5, 0.7],
     'num_leaves': [i for i in range(5, 20, 5)],
-    'min_data_in_leaf': [i for i in range(100, 1000, 200)],
+    'min_data_in_leaf': [i for i in range(100, 1000, 300)],
 }
 
 skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=1)

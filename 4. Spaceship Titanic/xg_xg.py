@@ -1,15 +1,12 @@
 import os
 from sklearn.model_selection import RandomizedSearchCV, train_test_split
-from sklearn.preprocessing import StandardScaler
 from sklearn.impute import SimpleImputer
-from sklearn.linear_model import LogisticRegression, SGDClassifier
+from scipy.stats import uniform, randint
+import xgboost as xgb
 
 import pandas as pd
 import numpy as np
 import warnings
-from lightgbm import LGBMClassifier
-from scipy.stats import uniform, randint
-import xgboost as xgb
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 
@@ -157,13 +154,16 @@ first_model = xgb.XGBClassifier(
 )
 
 first_rs = RandomizedSearchCV(first_model, {
-    'max_depth': randint(3, 10),
-    'n_estimators': randint(100, 1000),
-    'learning_rate': uniform(0.01, 0.3),
-}, n_iter=500, cv=5)
+    'max_depth': randint(3, 6),
+    'n_estimators': randint(300, 700),
+    'early_stopping_rounds': randint(50, 200),
+    'learning_rate': uniform(0.01, 0.1),
+    'reg_lambda' : uniform(0.1, 0.9),
+}, n_iter=1000, cv=5)
 
-first_rs.fit(titanic_input, titanic_target)
+first_rs.fit(titanic_input, titanic_target, eval_set=[(titanic_input, titanic_target)], verbose=0)
 first_model = first_rs.best_estimator_
+
 print("Best params:", first_rs.best_params_)
 # first_model.fit(titanic_input, titanic_target)
 
